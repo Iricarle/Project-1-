@@ -1,0 +1,511 @@
+---
+title: "bacteria"
+author: "CARLENE IRIMBERE"
+date: "2024-10-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## A. INTRODUCTION
+
+### BUSSINESS TASK
+Thsi work is done for learning purposes. the objectify is to do a exploratory analysis of the data set and record interesting fact discovered. 
+
+## B.PACKAGES REQUIRED FOR THIS PROJECT
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+library(sqldf)
+library(rvest)
+library(naniar)
+library(visdat)
+library(arrow)
+library(duckdb)
+
+
+
+## also installing the dependencies ‘gargle’, ‘ids’, ‘dbplyr’, ‘dtplyr’, ‘forcats’, ‘googledrive’, ‘googlesheets4’, ‘haven’, ‘lubridate’, ‘modelr’, ‘reprex’, ‘rvest’
+
+```
+
+
+## C. SET WORKING DIRECTORY
+```{r}
+setwd("I:/My Drive/DATA ANALYTICS/PROJECT PORTFOLIO/HEALTH CARE/bacteria")
+
+
+getwd()
+```
+
+## D. DATASET REQUIRED
+
+
+#### D.1.Description of the dataset. 
+
+ About Data set
+ =============
+Data set Overview: 
+This data set provides a comprehensive overview of 200 unique bacterial species, highlighting their scientific classification, natural habitats, and potential impacts on human health. 
+Data Science Applications
+
+
+credit: Thid data set was downoaled from KAGGLE
+
+
+
+#### Loading datasets
+
+
+```{r}
+bacteria2 <- read_csv("I:/My Drive/DATA ANALYTICS/PROJECT PORTFOLIO/HEALTH CARE/bacteria/bacteria_list_200_original_file.csv")
+```
+
+
+
+# E. EXPLORATORY ANALYSIS
+
+
+### E.1 PRE-CLEANING ACTIVITIES
+
+
+
+#### 1.1 INSPECTION OF THE DATASET
+
+```{r}
+View(bacteria)
+```
+
+result: 
+upon opening the dataset, I realized one thing, the column where found which is the natural habit for the bacteries, has multiple information and on criteria for achieving tidy data is to have 1 value per record. 
+
+the cleaning I wanted to do, I could not implement it in r studio or sql so I did it in excel since the data is small. for the sake of replication this is how I did it. 
+
+1. created table for all the data
+2. using Power query, split the column " where found" with delimiter "and", "comma", "&", in 5 column untill each record had 1 value. 
+3. then copied all the under the original "wher found" column making sure to keep the other field intact. 
+the number of records went from 200 to 280.
+to guarantee that the number of the record is accurate, used the function "counta" to make sure all the values have been well replicated. 
+
+4. the column "where found" was renamed "Natural_habitat" and "Harmful toHumans" to "Harmful_to_Humans"
+
+5. Triming the space and capitolizing each letter of the "natuaral_habitat" field since r studio is case sensitive. 
+
+
+
+
+
+F. LIMITATION OF THE DATA SET
+=============================
+in some fields, the value said "intestinal", "genitarinary track" without specifying if it's for humans of aminals.
+
+
+G. LOADONG CLEANED VERSION OF THE DATA SET 
+===========================================
+
+```{r}
+BACTERIA <- read_csv("I:/My Drive/DATA ANALYTICS/PROJECT PORTFOLIO/HEALTH CARE/bacteria/bacteria_list_cleaned_version.csv")
+```
+
+
+```{r}
+View(BACTERIA)
+```
+
+
+H. PRERIMINARY QUESTIONS
+======================
+
+1. Grouping by:
+a. the location count to the distribution of the natural_habitat. what is the top 10 of the most found natural habitat?
+
+b. by family, what is the most common family found in the dataset? show the top 10. and in total how many families do we have?
+
+2, what is the ration in term of difference between tha harmful and the non-hamrful to humans?
+
+3. what is the distribution of harmful bacteria across the 10 most common families and if possible to answer this question: the least common families are they mostly harmful or non-harmful to human?
+
+4. and if possible to answer this question: the least common families are they mostly harmful or non-harmful to human? so that we don't neglect them being like, they are the least common so no need to worry about them
+
+5. where the top 10 of harmful bacteria are found and top 10 of the non-harmful bacteria are found?
+
+
+#### QUESTION 1 
+ --------------
+
+
+1. Grouping by:
+a. the location count to the distribution of the natural_habitat. what is the top 10 of the most found natural habitat?
+
+b. by family, what is the most common family found in the dataset? show the top 10.
+
+  A.
+ ----
+
+```{r}
+BACTERIA |> 
+  group_by(Natural_habitat) |> 
+  count() |> 
+  arrange( desc(n)) |> 
+   head( 10) |> 
+  mutate( percentage = round (n/nrow( BACTERIA)* 100, 2))
+```
+show the percentage of it. 
+
+```{r}
+BACTERIA |> 
+  
+```
+
+
+
+ VISUALIZATION
+ =============
+```{r}
+BACTERIA |> 
+  group_by(Natural_habitat) |> 
+  count() |> 
+  arrange( desc(n)) |> 
+   head( 10) |> 
+  ggplot(aes(x= n , y = fct_infreq (Natural_habitat), fill= Natural_habitat)) +
+  geom_bar( stat = "identity")
+```
+
+
+for example this won't work if you don't add "identity"
+
+```{r}
+BACTERIA |> 
+  group_by(Natural_habitat) |> 
+  count() |> 
+  arrange( desc(n)) |> 
+   head( 10) |> 
+  ggplot(aes(x= Natural_habitat)) +
+  geom_bar( )
+```
+
+
+
+  B.
+ ----
+WHAT IS THE TOTAL DISTINCT COUNT OF FAMILIES 
+ ==================================
+```{r}
+BACTERIA |> 
+  distinct(Family) |> 
+  count()
+```
+ THE TOTAL COUNT OF THE FAMILIES
+  =============================
+  
+```{r}
+  nrow(BACTERIA)
+```
+
+ 
+ 
+b. by family, what is the most common family found in the data set? show the top 10.
+
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange( desc(n)) |> 
+   head( 10)
+```
+
+ VISUALIZATION
+ -------------
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange( desc(n)) |> 
+   head( 10) |> 
+  ggplot(aes(x = n , y = Family, fill= Family)) +
+  geom_bar(stat = "identity")
+```
+ 
+
+
+### QUESTION 2
+ -------------
+
+
+2, what is the ration in term of difference between the harmful and the non-hamrful to humans?
+
+```{r}
+BACTERIA |> 
+  
+  group_by(Harmful_to_Humans) |> 
+  count() |> 
+  mutate(percentage = round (n/nrow(BACTERIA) * 100, 2)) |> 
+  arrange(desc(percentage))
+```
+
+ VISUALIZATION 
+ -------------
+```{r}
+BACTERIA |> 
+  ggplot(aes( x= fct_infreq( Harmful_to_Humans), fill= Harmful_to_Humans)) +
+  geom_bar()
+```
+
+
+### QUESTION 3 
+ ==============
+
+3. what is the distribution of harmful bacteria across the 10 most common families and if possible to answer this question: the least common families are they mostly harmful or non-harmful to human?
+
+ COUNT OF THE FAMILIES
+ ====================
+ a. count of families sorted by the most found
+ ---------------------------------------------
+
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange(desc(n))
+```
+
+
+
+ b. top 10 out of all those families
+ -------------------------------------
+select TOP 10 Family,  count (family) count_family
+from BACTERIA
+group by Family
+order by count_family desc
+
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(10)
+```
+
+   IMPORTANT NOTE
+ ==================
+IT WOULD BEST, AFTER ANALYSING THE RESULT OF THESE 2 (ABOVE) QUEUIRES, TO GO WITH TOP 15 SO THAT ALL THE BACTERIA WITH AT LEAST A PREVALENCE SUPERIOR TO 5 ARE REPRESENTED. 
+
+FOR THE SAKE OF THE ANALYSIS, BACTERIA WITH A PREVALENCE ABOVE OR EQUAL TO 5 ARE GOING TO BE CONSIDERED COMMOM OR IN THE TOP 15, THE PREVALENCE BELOW OR EQUAL TO 4 IS GOING TO BE LABELED NON- COMMON. 
+
+ c. top 15 out of all those families
+ -------------------------------------
+
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+
+
+From the top 15 most found bacteria IN COUNT, what is the distribution of harmful to humans bacteria
+    or
+among the 15 family what is the prevalence of the harmful to human bacteria and non harmful to human bacteria
+
+
+   harmful
+  ----------
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  filter(Harmful_to_Humans == "Yes") |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+
+
+ VISUALIZATION 
+ ------------
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  filter(Harmful_to_Humans == "Yes") |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15) |> 
+  ggplot(aes(x = n , y = Family, fill= Family)) +
+  geom_bar(stat = "identity")
+```
+
+
+OR: THIS ALSO GIVES THE SAME RESULT. 
+
+```{r}
+BACTERIA |> 
+   filter(Harmful_to_Humans == "Yes") |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+
+
+ non- harmful
+ --------------
+```{r}
+BACTERIA |> 
+   filter(Harmful_to_Humans == "No") |> 
+  group_by(Family) |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+ VISUALIZATION 
+ =============
+```{r}
+BACTERIA |> 
+  group_by(Family) |> 
+  filter(Harmful_to_Humans == "No") |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15) |> 
+  ggplot(aes(x = n , y = Family, fill= Family)) +
+  geom_bar(stat = "identity")
+```
+ 
+ 
+ i would like to have a visualization that shows on stacked bar, the top 15 families in bar and the color is Yes or No to being harmful to humans. 
+ 
+### QUESTION 4
+ ==============
+ 
+ and if possible to answer this question: the least common families are they mostly harmful or non-harmful to human? so that we don't neglect them being like, they are the least common so no need to worry about them
+
+
+as we have established in the important note: the least common are going to be the one with a prevalence that is below 4
+
+  STEPS 
+ =======
+ a. count the families and sorting them in the ascending order and limit to where the count is equal or below 4 
+
+
+```{r}
+BACTERIA |> 
+  group_by( Family) |> 
+  count() |> 
+  filter(n <= 4) |> 
+  arrange (desc(n))
+```
+
+ b. find the revalence of harmful bacteria in those we selected.
+ ----------------------------------------------------------------------
+
+
+```{r}
+BACTERIA |> 
+  filter(Harmful_to_Humans == 'Yes') |> 
+  group_by( Family) |> 
+  count() |> 
+  arrange ( n)
+```
+ 
+the harmullness of the bacteria in the bracket prevalence equal to 4 
+ ----------------------------------------------------------
+```{r}
+BACTERIA |> 
+  filter(Harmful_to_Humans == 'Yes') |> 
+  group_by( Family) |> 
+  count() |> 
+  filter(n == 4) |> 
+  arrange ( n)
+```
+ 
+ 
+ 
+ 
+ 
+   c. find the relavence of non-harmful bacteria in those we selected.
+  --------------------------------------------------------------
+ 
+```{r}
+BACTERIA |> 
+  filter(Harmful_to_Humans == 'No') |> 
+  group_by( Family) |> 
+  count() |> 
+  filter(n <= 4) |> 
+  arrange ( n)
+```
+### QUESTION 5
+ =============
+
+ 5. where the top 15 of harmful bacteria are found and top 15 of the non-harmful bacteria  are found?
+
+   STEPS
+ ========
+
+ a. first we find out where the top 15 families live
+ -------------------------------------------------------
+
+```{r}
+BACTERIA |>
+  group_by(Family, Natural_habitat) |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+
+  harmful
+ ---------
+
+```{r}
+BACTERIA |>
+  group_by(Family, Natural_habitat) |> 
+  filter(Harmful_to_Humans == "Yes") |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+
+ non- harmful
+ -----------------
+
+```{r}
+BACTERIA |>
+  group_by(Family, Natural_habitat) |> 
+  filter(Harmful_to_Humans == "No") |> 
+  count() |> 
+  arrange(desc(n)) |> 
+  head(15)
+```
+ 
+
+## CONCLUSION ON OUR FINDINGS.
+ =============================
+ 
+ After the exploratory analysis, I found out that: 
+ 
+ 
+  KEYS FINDINGS
+  ============
+1. In the distribution of the natural habitat,  
+Soil comes way far ahead, followed by water, Intestinal Tract, Plants. 
+2. Harmful bacteria to humans counts for 50.71% fo the total count of bacteria. whist non-harmful bacteria are	49.29	%
+
+3. The top 3 families most commonly found overall are Enterobacteriaceae	with a leading count of 33 , Streptococcaceae	23			
+Flavobacteriaceae	9	
+
+and yet the most commonly found in the harmful category are
+Streptococcaceae	19			
+Enterobacteriaceae	15			
+Flavobacteriaceae	8
+
+and in the non-harmful category
+Enterobacteriaceae	18		
+Bacillaceae	7		
+Acetobacteraceae	5
+
+4, the interesting fact about the less common bacteria, meaning a prevalence below or equal to 4, have an almost 50-50 distribution with the bacteria in the bracket of prevalence equal to 4 being all harmful to human. 
+
+5. whent it comes to the habitat of the bacteria in relationship to their harmulness: 
+the top 15 of the harmfull category are mainly found in the  Intestinal Tract,	Genitourinary Tracts, Intestinal and in the Soil.
+the top 15 of the non-harmful to human are found mainly in the Intestinal Tract, Soil and in the human gut. 
