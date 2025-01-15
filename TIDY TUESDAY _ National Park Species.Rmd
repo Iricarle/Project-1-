@@ -1,0 +1,382 @@
+ ---
+title: "TIDY TUESDAY _ National Park Species"
+author: "CARLENE IRIMBERE"
+date: "2024-12-04"
+output: html_document
+ ---
+
+
+This project is part of the tidy tuesday challenge. From the week of 8/10/2024
+
+## 1. INTRODUCTION
+
+This week we're exploring species at the most visited National Parks in the USA! NPSpecies contains species listed by National Parks maintained by National Parks Service (NPS). Given the size of the dataset, we're focusing on the 15 most visited parks. The data comes from https://irma.nps.gov/NPSpecies/Search/SpeciesList.
+
+  DISCLAIMER
+        
+ 
+The information in NPSpecies is available to the public. The exceptions to this are records for some sensitive, threatened, or endangered species, where widespread distribution of information could potentially put a species at risk.
+
+An essential component of NPSpecies is evidence; that is, observations, vouchers, or reports that document the presence of a species in a park. Ideally, every species in a park that is designated as “present in park” will have at least one form of credible evidence substantiating the designation
+credit: tidy tuesday
+ 
+#### 1.1 BUSINESS TASK 
+
+For this project, we will doing a exploratory analysis, to gain a better understanding of the data and uncorver patterns. 
+
+
+## 2. LIBRARY 
+```{r}
+library(tidyverse)
+library(ggthemes)
+library(sqldf)
+library(rvest)
+library(naniar)
+library(visdat)
+library(arrow)
+library(duckdb)
+```
+
+## 3. SET WORKING DIRECTORY
+ 
+```{r}
+setwd("I:/My Drive/DATA ANALYTICS/PROJECT PORTFOLIO/TIDY TUESDAY _ National Park Species")
+
+```
+ 
+## 4. THE DATA 
+
+For the data we decided to use the raw version and downloaded it directly. The data was prealably cleaned and we are using the 15 most visited parks, hence the name of the data when harvested. 
+
+```{r}
+most_visited_nps_species_data <- read_csv("I:/My Drive/DATA ANALYTICS/PROJECT PORTFOLIO/TIDY TUESDAY _ National Park Species/most_visited_nps_species_data.csv")
+```
+
+### 4.1 DATA LIMITATION
+
+The data does not have much of limitations except that there are some fields that are not much relevant. 
+
+
+
+but let's do some cleaning and see if there is  nulls or duplicates
+
+
+## 5. CLEANING THE DATASET : MISSING VALUES, DUPLICATES AND OUTLIERS
+
+The goal for this step is to get the data tidy. tidy data is data where one value per field and per record. and renaming columns if necessary. 
+
+####  5.1 MISSING VALUES
+
+```{r}
+gg_miss_var( most_visited_nps_species_data , show_pct = TRUE) 
+```
+
+The primary analysis of the data combined with the reading the field description, there some fields in which I see relevancy and other not. 
+
+For those with relevance, as seen in the chart above of missing value, most them have not much missing data except for abundance and nativeness. 
+
+In the important columns the missing vaues are less than 25% so we can keep them. 
+
+#### 5.2 DUPLICATES
+
+Given the nature of the data, it's obvsious that we have duplicates, and they are intetional in many fields. The only field that should not contain duplicate is the "Sciname" for the scientific name of  the species. 
+
+```{r}
+most_visited_nps_species_data |> 
+  select(SciName) |> 
+  count() 
+```
+```{r}
+most_visited_nps_species_data |> 
+  distinct(SciName) |> 
+  count()
+```
+
+For now, the cleaning is not conclusive. we will be keen when we analyse and clean as we go, field by field. 
+
+
+
+# 6. QUESTIONS
+   ============
+
+#### QUESTION 1
+   =============
+1. a general question for the whole table: how many row and columns do we have? 
+
+ For the first part let's combine the Parkcode column and the ParkName.
+
+1. how many park do we have?
+
+#### QUESTION 2 
+ =========
+   CATEGORYNAME  
+ ===============
+ 1. how many of the category name do we have?
+
+    GROUP TOGETHER CATEGORYNAME, ORDER AND FAMILY
+  ==============================================
+1. find the count in each of the fields and group the by the one that has the lowest count. 
+
+#### QUESTION 3 
+  TaxonRecordStatus
+ ===================
+ 1. how many type of status do we have. 
+
+
+#### QUESTION 4 
+ ParkAccepted
+ =============
+ This field tells if a species is accepted or not in a park. 
+ so we can ask:
+ 1. how many species are accepted i all the parks
+ 2. which park accepts the least species and which one accepts the most species (
+ the top 1 in accepting species)
+ 3. which species have a high level of acceptency and those who have a high level of denial ( or 
+ those who have the lowest level of acceptancy.)
+ 4. In term of percentage: which category of animal that has the highest acceptency rate and the one
+ with the least.
+ 5. on average , how many animals are accepted, how many are denied?
+
+#### QUESTION 5
+
+ Record status
+ =================
+ whether or not nps approved the species.
+
+ This field goes hand in hand with the ParkAccepted field.
+ we can confirm if they match or not. and this for visualisation. 
+
+#### QUESTION 6
+
+ Occurence
+ ==========
+  The current status of existence or presence of each species in each park.
+  Applicable only to scientific names with Park Accepted Status of "Accepted".
+  Possible values reflect a combination of confidence, and availability and currency 
+  of verifiable evidence.
+
+#### QUESTION 7
+
+ Nativeness	
+ ===========
+ whether or not the species is native. 
+ how many natives or not?
+ 1. if we combine with the approval field, is there a correlation between being native or non-native 
+ with that fact of being accepted in a park? 
+ 2. if we look into non-native, do they have a high rate of acceptancy or is it low? 
+ 3. I am assuming the natives have no problem with acceptancy, it should be high, is it true? 
+
+#### QUESTION 8
+ Abundance	
+ =============
+ This field tells how abundant is the species in the park
+
+ 1. what are the qualifiers used to describe the abundance? 
+ 2. and what is the most and the least of each qualifier? 
+
+ the last 3 columns can be can be analysed after understanding the dataset better. 
+
+
+ at this stage we can say with confindence the fields we judge of relenvence: 
+
+SELECT 1,2,3,4,5,6,10,12,15
+FROM most_visited_nps_species_data
+
+
+# 7. ANSWERS 
+
+#### ANSWER 1. 
+
+1. a general question for the whole table: how many row and columns do we have? 
+
+ For the first part let's combine the Parkcode column and the ParkName.
+
+2. how many park do we have?
+
+
+
+1. a general question for the whole table: how many row and columns do we have? 
+```{r}
+tibble(most_visited_nps_species_data)
+```
+
+2. how many park do we have?
+```{r}
+most_visited_nps_species_data |> 
+  distinct(ParkName) |> 
+  count()
+```
+
+
+
+#### VIZ 1
+     =====
+1. Show the distribution of parks?
+
+```{r}
+most_visited_nps_species_data |> 
+  group_by(ParkName) |> 
+  count() |> 
+  arrange(desc(n))
+```
+```{r}
+most_visited_nps_species_data |> 
+  ggplot(aes(x = fct_infreq (ParkName), fill= ParkName)) +
+  geom_bar( ) +
+  theme(axis.text.x = element_blank()) +
+  theme(legend.position = "top", legend.direction = "horizontal")
+
+# add legend and scale
+```
+
+ 
+ 
+#### ANSWER 2
+ ===========
+ CATEGORYNAME  
+ ===============
+1. how many of the category name do we have?
+
+ GROUP TOGETHER CATEGORYNAME, ORDER AND FAMILY 
+  ==============================================
+1. find the count in each of the fields and group the by the one that has the lowest count.
+do a visualization about this aggregation.
+
+
+1. how many of the category name do we have?
+
+```{r}
+most_visited_nps_species_data |> 
+  distinct (CategoryName) |> 
+  count()
+```
+
+GROUP TOGETHER CATEGORYNAME, ORDER AND FAMILY 
+  ==============================================
+1. find the count in each of the fields and group the by the one that has the lowest count.
+do a visualization about this aggregation.
+
+
+```{r}
+most_visited_nps_species_data |> 
+  distinct (Order) |> 
+  count()
+```
+
+
+```{r}
+most_visited_nps_species_data |> 
+  distinct (Family) |> 
+  count()
+```
+
+
+```{r}
+most_visited_nps_species_data |> 
+  ggplot(aes(x = CategoryName, y = Family)) +
+  geom_point() +
+  theme(axis.text.y = element_blank(), 
+        axis.text.x = element_blank())
+```
+
+
+
+
+#### ANSWER 3
+ ===========
+  TaxonRecordStatus
+ ===================
+ 1. how many type of status do we have. 
+
+```{r}
+most_visited_nps_species_data |> 
+  group_by(TaxonRecordStatus) |> 
+  count()
+```
+
+
+
+
+#### ANSWER 4 
+
+ ParkAccepted
+ =============
+This field tells if a species is accepted or not in a park. 
+so we can ask:
+1. how many species are accepted in all the parks
+2. which park accepts the least species and which one accepts the most species ( the top 1 in accepting species)
+3. which species have a high level of acceptency and those who have a high level of denial ( or 
+ those who have the lowest level of acceptancy.)
+ 4. In term of percentage: which category of animal that has the highest acceptency rate and the one
+ with the least.
+ 5. on average , how many species are accepted, how many are denied?
+
+
+1. how many species are accepted in all the parks
+```{r}
+most_visited_nps_species_data |> 
+  group_by(ParkAccepted) |> 
+  count() |> 
+  arrange(desc(n))
+```
+2. which park accepts the least species and which one accepts the most species ( the top 1 in accepting species)
+
+```{r}
+most_visited_nps_species_data |> 
+  select(ParkName, ParkAccepted) |> 
+  group_by(ParkName) |> 
+  filter(ParkAccepted == "TRUE") |> 
+  count() |> 
+  arrange(desc(n))
+```
+
+3. which species have a high level of acceptency and those who have a high level of denial ( or 
+those who have the lowest level of acceptancy.)
+ 
+ 
+```{r}
+most_visited_nps_species_data |> 
+  select(CategoryName, ParkAccepted) |> 
+  group_by(CategoryName) |> 
+  filter(ParkAccepted == "TRUE") |> 
+  count() |> 
+  arrange(desc(n))
+```
+```{r}
+most_visited_nps_species_data |> 
+  select(CategoryName, ParkAccepted) |> 
+  group_by(CategoryName) |> 
+  filter(ParkAccepted == "FALSE") |> 
+  count() |> 
+  arrange(desc(n))
+```
+ 
+ 4. In term of percentage: which category of species that has the highest acceptency rate and the one
+ with the least.
+
+```{r}
+most_visited_nps_species_data |> 
+  select(CategoryName, ParkAccepted) |> 
+  group_by(CategoryName) |> 
+  filter(ParkAccepted == "TRUE") |> 
+  count() |> 
+  mutate(Percent_of_acceptence = round (n / nrow(most_visited_nps_species_data) * 100, 2))|> 
+  arrange(desc(n))
+```
+5. on average , how many species are accepted, how many are denied?
+
+```{r}
+  most_visited_nps_species_data |> 
+  select(CategoryName, ParkAccepted) |> 
+  group_by(CategoryName) |> 
+  filter(ParkAccepted == "TRUE") |> 
+  count() |> 
+  transmute(aver = mean(n))
+  
+  
+```
+
+```{r}
+mean(average$n)
+```
+
